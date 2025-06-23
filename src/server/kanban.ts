@@ -344,3 +344,20 @@ export async function deleteTask({ taskId }: { taskId: string }) {
     console.error(error);
   }
 }
+
+export async function renameTask({
+  taskId,
+  title,
+}: {
+  taskId: string;
+  title: string;
+}) {
+  try {
+    await prisma.kanbanCard.update({
+      where: { id: taskId },
+      data: { title },
+    });
+  } catch (error) {
+    console.error(error);
+  }
+}

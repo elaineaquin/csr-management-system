@@ -39,6 +39,8 @@ import { getColumnColorClass } from "../kanban-board/board-column";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ButtonGuard } from "../button-guard";
+import TaskDrawer from "../task-drawer";
+import { useDeleteTask, useRenameTask } from "@/hooks/use-kanban";
 
 type SortField = "title" | "column" | "dueDate";
 type SortDirection = "asc" | "desc";
@@ -50,10 +52,14 @@ export function ListView({
   board: KanbanBoardType;
   onDeleteTask?: (params: { taskId: string }) => void;
 }) {
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const { mutateAsync: renameTask } = useRenameTask();
+  const { mutateAsync: deleteTask } = useDeleteTask();
   const [searchQuery, setSearchQuery] = useState("");
   const [columnFilter, setColumnFilter] = useState<string>("all");
   const [sortField, setSortField] = useState<SortField>("title");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
   // Extract all tasks from all columns
   const allTasks = useMemo(() => {
@@ -129,6 +135,11 @@ export function ListView({
     ) : (
       <ArrowDownIcon className="h-4 w-4 ml-1" />
     );
+  };
+
+  const onDelete = async ({ taskId }: { taskId: string }) => {
+    await deleteTask({ taskId });
+    onDeleteTask?.({ taskId });
   };
 
   return (
@@ -210,92 +221,109 @@ export function ListView({
               </TableRow>
             ) : (
               filteredAndSortedTasks.map((task) => (
-                <TableRow key={task.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex flex-col">
-                      <span>{task.title}</span>
-                      {task.description && (
-                        <span className="text-xs text-muted-foreground line-clamp-1">
-                          {task.description}
+                <div key={task.id}>
+                  <TableRow key={task.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex flex-col">
+                        <span
+                          className="hover:underline cursor-pointer"
+                          onClick={() => setSelectedTaskId(task.id)}
+                        >
+                          {task.title}
                         </span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className={cn(
-                        "text-xs",
-                        getColumnColorClass(task.columnColor)
-                      )}
-                    >
-                      {task.columnTitle}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {task.dueDate ? (
-                      <span className="text-sm">
-                        {new Date(task.dueDate).toLocaleDateString()}
-                      </span>
-                    ) : (
-                      <span className="text-sm text-muted-foreground italic">
-                        No due date
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {task.assignees && task.assignees.length > 0 ? (
-                      <div className="flex -space-x-2">
-                        {task.assignees.slice(0, 3).map((assignee) => (
-                          <Avatar
-                            key={assignee.user.id}
-                            className="h-6 w-6 border-2 border-background"
-                          >
-                            <AvatarFallback className="text-xs">
-                              {assignee.user.name?.[0] || "?"}
-                            </AvatarFallback>
-                          </Avatar>
-                        ))}
-                        {task.assignees.length > 3 && (
-                          <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-background bg-muted text-xs">
-                            +{task.assignees.length - 3}
-                          </div>
+                        {task.description && (
+                          <span className="text-xs text-muted-foreground line-clamp-1">
+                            {task.description}
+                          </span>
                         )}
                       </div>
-                    ) : (
-                      <span className="text-sm text-muted-foreground italic">
-                        Unassigned
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <ButtonGuard name="kanban" actions={["edit", "delete"]}>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={cn(
+                          "text-xs",
+                          getColumnColorClass(task.columnColor)
+                        )}
+                      >
+                        {task.columnTitle}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {task.dueDate ? (
+                        <span className="text-sm">
+                          {new Date(task.dueDate).toLocaleDateString()}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground italic">
+                          No due date
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {task.assignees && task.assignees.length > 0 ? (
+                        <div className="flex -space-x-2">
+                          {task.assignees.slice(0, 3).map((assignee) => (
+                            <Avatar
+                              key={assignee.user.id}
+                              className="h-6 w-6 border-2 border-background"
+                            >
+                              <AvatarFallback className="text-xs">
+                                {assignee.user.name?.[0] || "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                          ))}
+                          {task.assignees.length > 3 && (
+                            <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-background bg-muted text-xs">
+                              +{task.assignees.length - 3}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground italic">
+                          Unassigned
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <ButtonGuard name="kanban" actions={["edit", "delete"]}>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                            >
+                              <MoreHorizontalIcon className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                        </ButtonGuard>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <PencilIcon className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => onDeleteTask?.({ taskId: task.id })}
                           >
-                            <MoreHorizontalIcon className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                      </ButtonGuard>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <PencilIcon className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => onDeleteTask?.({ taskId: task.id })}
-                        >
-                          <TrashIcon className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
+                            <TrashIcon className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+
+                  <TaskDrawer
+                    task={task}
+                    open={selectedTaskId === task.id}
+                    onOpenChange={(open) => !open && setSelectedTaskId(null)}
+                    openDeleteDialog={openDeleteDialog}
+                    setOpenDeleteDialog={setOpenDeleteDialog}
+                    onDelete={onDelete}
+                    onRename={renameTask}
+                  />
+                </div>
               ))
             )}
           </TableBody>

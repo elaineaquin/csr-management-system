@@ -399,6 +399,7 @@ export async function getUserParticipatedProjects() {
   const projects = volunteeredProjects.map(
     (volunteered) => volunteered.volunteerRequest.project
   );
+
   return projects;
 }
 
