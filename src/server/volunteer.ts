@@ -5,6 +5,26 @@ import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { headers } from "next/headers";
 
+export type VolunteerRequestType = Prisma.VolunteerRequestGetPayload<{
+  include: {
+    project: {
+      select: {
+        id: true;
+        title: true;
+        description: true;
+        needsAttention: true;
+      };
+    };
+    createdBy: {
+      select: {
+        id: true;
+        name: true;
+        image: true;
+      };
+    };
+  };
+}>;
+
 export type VolunteerType = Prisma.VolunteerGetPayload<{
   include: {
     availability: {
@@ -12,6 +32,7 @@ export type VolunteerType = Prisma.VolunteerGetPayload<{
         day: true;
       };
     };
+
     user: {
       select: {
         id: true;
@@ -24,6 +45,12 @@ export type VolunteerType = Prisma.VolunteerGetPayload<{
       select: {
         id: true;
         message: true;
+      };
+    };
+    volunteerForm: {
+      select: {
+        motivation: true;
+        experience: true;
       };
     };
   };
@@ -65,7 +92,7 @@ export async function participateRequest({
   motivation: string;
   experience: string;
 }) {
-  // 1. Ensure request exists and is not full
+  // 1. Ensure request exists
   const request = await prisma.volunteerRequest.findUnique({
     where: { id: requestId },
     include: { volunteers: true },
@@ -170,13 +197,7 @@ export async function participateRequest({
   };
 }
 
-type GetVolunteersByProjectIdParams = {
-  projectId: string;
-};
-
-export async function getVolunteersByProjectId(
-  params: GetVolunteersByProjectIdParams
-): Promise<VolunteerType[]> {
+export async function getVolunteersByProjectId(params: { projectId: string }) {
   const { projectId } = params;
 
   const volunteers = await prisma.volunteer.findMany({
@@ -223,7 +244,11 @@ export async function getVolunteerRequestById({ id }: { id: string }) {
     include: {
       _count: {
         select: {
-          volunteers: true,
+          volunteers: {
+            where: {
+              status: "Approved",
+            },
+          },
         },
       },
       project: true,
@@ -276,7 +301,7 @@ export async function getVolunteerRequestById({ id }: { id: string }) {
   };
 }
 
-export async function closeVolunteerRequesr({ id }: { id: string }) {
+export async function closeVolunteerRequest({ id }: { id: string }) {
   try {
     const volunteerRequest = await prisma.volunteerRequest.update({
       where: { id },
@@ -430,6 +455,47 @@ export async function updateVolunteerStatus({
   volunteerId: string;
   status: "Pending" | "Approved" | "Rejected";
 }) {
+  // Get volunteer's current data
+  const currentVolunteer = await prisma.volunteer.findUnique({
+    where: { id: volunteerId },
+    include: {
+      volunteerRequest: {
+        include: {
+          project: {
+            select: { id: true, title: true },
+          },
+          volunteers: {
+            select: { status: true },
+          },
+        },
+      },
+      user: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+        },
+      },
+    },
+  });
+
+  if (!currentVolunteer) throw new Error("Volunteer not found");
+
+  const volunteerRequest = currentVolunteer.volunteerRequest;
+  const participantLimit = volunteerRequest.participantLimit ?? Infinity;
+
+  // Count current approved volunteers (excluding this one)
+  const approvedCount = volunteerRequest.volunteers.filter(
+    (v) => v.status === "Approved"
+  ).length;
+
+  if (status === "Approved" && approvedCount >= participantLimit) {
+    throw new Error(
+      "Participant limit reached. Cannot approve more volunteers."
+    );
+  }
+
+  // Update volunteer status
   const updatedVolunteer = await prisma.volunteer.update({
     where: { id: volunteerId },
     data: { status },
@@ -454,38 +520,12 @@ export async function updateVolunteerStatus({
     },
   });
 
-  if (status === "Approved") {
-    const volunteerRequestId = updatedVolunteer.volunteerRequestId;
-
-    const [volunteerRequest, participantLimit] = await Promise.all([
-      prisma.volunteerRequest.findUnique({
-        where: { id: volunteerRequestId },
-        select: {
-          id: true,
-          volunteers: {
-            select: { status: true },
-          },
-        },
-      }),
-      prisma.volunteerRequest.findUnique({
-        where: { id: volunteerRequestId },
-        select: { participantLimit: true },
-      }),
-    ]);
-
-    const approvedCount =
-      volunteerRequest?.volunteers.filter((v) => v.status === "Approved")
-        .length ?? 0;
-
-    if (
-      participantLimit &&
-      approvedCount >= participantLimit.participantLimit
-    ) {
-      await prisma.volunteerRequest.update({
-        where: { id: volunteerRequestId },
-        data: { status: "Filled" },
-      });
-    }
+  // If after this approval, limit is now reached, mark request as filled
+  if (status === "Approved" && approvedCount + 1 >= participantLimit) {
+    await prisma.volunteerRequest.update({
+      where: { id: volunteerRequest.id },
+      data: { status: "Filled" },
+    });
   }
 
   return {

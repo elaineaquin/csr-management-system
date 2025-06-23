@@ -8,7 +8,7 @@ CREATE TYPE "FundRequestCategoryType" AS ENUM ('Training', 'Material', 'Donation
 CREATE TYPE "DocumentCategoryType" AS ENUM ('Reports', 'Contracts', 'Compliance', 'Proposals');
 
 -- CreateEnum
-CREATE TYPE "ProjectStatusType" AS ENUM ('Pending', 'Approved', 'Rejected', 'Revision', 'Ongoing', 'HighRisk', 'Completed');
+CREATE TYPE "ProjectStatusType" AS ENUM ('Pending', 'ProposalApproved', 'BudgetApproved', 'Approved', 'Rejected', 'Revision', 'Ongoing', 'HighRisk', 'Completed');
 
 -- CreateEnum
 CREATE TYPE "VolunteerRequestStatus" AS ENUM ('Open', 'Closed', 'Filled', 'Cancelled');
@@ -18,6 +18,9 @@ CREATE TYPE "KanbanColorType" AS ENUM ('Red', 'Green', 'Blue', 'Violet', 'Orange
 
 -- CreateEnum
 CREATE TYPE "PermissionType" AS ENUM ('READ', 'WRITE', 'OWNER');
+
+-- CreateEnum
+CREATE TYPE "VolunteerStatus" AS ENUM ('Pending', 'Approved', 'Rejected');
 
 -- CreateTable
 CREATE TABLE "user" (
@@ -230,8 +233,19 @@ CREATE TABLE "volunteer" (
     "userId" TEXT NOT NULL,
     "volunteerRequestId" TEXT NOT NULL,
     "joinedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "status" "VolunteerStatus" NOT NULL DEFAULT 'Pending',
 
     CONSTRAINT "volunteer_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "volunteer_form" (
+    "id" TEXT NOT NULL,
+    "motivation" TEXT NOT NULL,
+    "experience" TEXT NOT NULL,
+    "volunteerId" TEXT NOT NULL,
+
+    CONSTRAINT "volunteer_form_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -457,6 +471,9 @@ ALTER TABLE "volunteer" ADD CONSTRAINT "volunteer_userId_fkey" FOREIGN KEY ("use
 
 -- AddForeignKey
 ALTER TABLE "volunteer" ADD CONSTRAINT "volunteer_volunteerRequestId_fkey" FOREIGN KEY ("volunteerRequestId") REFERENCES "volunteer_request"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "volunteer_form" ADD CONSTRAINT "volunteer_form_volunteerId_fkey" FOREIGN KEY ("volunteerId") REFERENCES "volunteer"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "kanban_board" ADD CONSTRAINT "kanban_board_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

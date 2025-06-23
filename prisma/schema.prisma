@@ -10,7 +10,7 @@ datasource db {
 model User {
   id                 String                      @id @default(uuid())
   name               String
-  email              String                      @unique
+  email              String
   emailVerified      Boolean
   image              String?
   createdAt          DateTime
@@ -20,41 +20,43 @@ model User {
   banReason          String?
   banExpires         DateTime?
   theme              String?
-  rooms              DiscussionRoomParticipant[]
-  messages           Message[]
+  sessions           Session[]
   accounts           Account[]
-  createdAttachments Attachment[]
+  notifications      Notification[]
   documents          Document[]
   folders            DocumentFolder[]
   createdVersions    DocumentVersion[]
+  createdAttachments Attachment[]
   sharedFolders      FolderShare[]
+  projects           Project[]
   fundRequests       FundRequest[]
+  volunteerRequests  VolunteerRequest[]
+  volunteers         Volunteer[]
   ownedBoards        KanbanBoard[]               @relation("BoardOwner")
+  memberBoards       KanbanBoard[]               @relation("BoardMembers")
   cards              KanbanCard[]
   assignees          KanbanCardAssignee[]
   comments           KanbanComment[]
-  notifications      Notification[]
-  projects           Project[]
-  sessions           Session[]
-  volunteers         Volunteer[]
-  volunteerRequests  VolunteerRequest[]
-  memberBoards       KanbanBoard[]               @relation("BoardMembers")
+  messages           Message[]
+  rooms              DiscussionRoomParticipant[]
 
+  @@unique([email])
   @@map("user")
 }
 
 model Session {
   id             String   @id
   expiresAt      DateTime
-  token          String   @unique
+  token          String
   createdAt      DateTime
   updatedAt      DateTime
   ipAddress      String?
   userAgent      String?
   userId         String
-  impersonatedBy String?
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  impersonatedBy String?
 
+  @@unique([token])
   @@map("session")
 }
 
@@ -63,6 +65,7 @@ model Account {
   accountId             String
   providerId            String
   userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   accessToken           String?
   refreshToken          String?
   idToken               String?
@@ -72,7 +75,6 @@ model Account {
   password              String?
   createdAt             DateTime
   updatedAt             DateTime
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("account")
 }
@@ -89,18 +91,20 @@ model Verification {
 }
 
 model DocumentFolder {
-  id             String        @id @default(uuid())
-  title          String        @unique
-  isRestricted   Boolean       @default(false)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id             String   @id @default(uuid())
+  title          String
+  isRestricted   Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
   parentFolderId String?
   createdById    String
-  inviteToken    String?
-  documents      Document[]
-  createdBy      User          @relation(fields: [createdById], references: [id])
-  shares         FolderShare[]
 
+  documents   Document[]
+  createdBy   User          @relation(fields: [createdById], references: [id])
+  shares      FolderShare[]
+  inviteToken String?
+
+  @@unique([title])
   @@map("document_folder")
 }
 
@@ -113,40 +117,43 @@ model Document {
   updatedAt        DateTime             @updatedAt
   createdById      String
   documentFolderId String
-  projectId        String?
-  fundRequestId    String?
-  createdBy        User                 @relation(fields: [createdById], references: [id])
-  documentFolder   DocumentFolder       @relation(fields: [documentFolderId], references: [id], onDelete: Cascade)
-  FundRequest      FundRequest?         @relation(fields: [fundRequestId], references: [id])
-  Project          Project?             @relation(fields: [projectId], references: [id])
+
+  createdBy        User              @relation(fields: [createdById], references: [id])
+  documentFolder   DocumentFolder    @relation(fields: [documentFolderId], references: [id], onDelete: Cascade)
   documentVersions DocumentVersion[]
+  Project          Project?          @relation(fields: [projectId], references: [id])
+  projectId        String?
+  FundRequest      FundRequest?      @relation(fields: [fundRequestId], references: [id])
+  fundRequestId    String?
 
   @@map("document")
 }
 
 model DocumentVersion {
-  id           String     @id @default(uuid())
+  id           String   @id @default(uuid())
   version      String
   message      String?
   attachmentId String
-  createdAt    DateTime   @default(now())
+  createdAt    DateTime @default(now())
   createdById  String
   documentId   String
-  attachment   Attachment @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
-  createdBy    User       @relation(fields: [createdById], references: [id])
-  document     Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  createdBy  User       @relation(fields: [createdById], references: [id])
+  document   Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  attachment Attachment @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
 
   @@map("document_version")
 }
 
 model Attachment {
-  id               String            @id @default(uuid())
-  name             String
-  type             String
-  size             Int
-  storageId        String
-  createdAt        DateTime          @default(now())
-  createdById      String
+  id          String   @id @default(uuid())
+  name        String
+  type        String
+  size        Int
+  storageId   String
+  createdAt   DateTime @default(now())
+  createdById String
+
   createdBy        User              @relation(fields: [createdById], references: [id])
   documentVersions DocumentVersion[]
 
@@ -158,8 +165,9 @@ model FolderShare {
   folderId   String
   userId     String
   permission PermissionType @default(READ)
-  folder     DocumentFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  user       User           @relation(fields: [userId], references: [id])
+
+  folder DocumentFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  user   User           @relation(fields: [userId], references: [id])
 
   @@unique([folderId, userId])
   @@map("folder_share")
@@ -183,9 +191,9 @@ model Project {
   isConfirmed       Boolean            @default(false)
   discussionId      String?
   completionDate    DateTime?
+  createdBy         User               @relation(fields: [createdById], references: [id])
   documents         Document[]
   fundRequests      FundRequest[]
-  createdBy         User               @relation(fields: [createdById], references: [id])
   projectHistories  ProjectHistory[]
   volunteerRequests VolunteerRequest[]
 
@@ -197,8 +205,8 @@ model ProjectHistory {
   title     String
   subtitle  String
   projectId String
-  createdAt DateTime @default(now())
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 
   @@map("project_history")
 }
@@ -213,12 +221,12 @@ model FundRequest {
   createdById     String
   createdAt       DateTime                @default(now())
   discussionId    String?
-  releaseDate     DateTime?
-  referenceNumber String?
+  releaseDate     DateTime? // date when the fund is released
+  referenceNumber String? // bank transfer reference number
   rejectedReason  String?
-  documents       Document[]
-  createdBy       User                    @relation(fields: [createdById], references: [id])
   project         Project                 @relation(fields: [projectId], references: [id])
+  createdBy       User                    @relation(fields: [createdById], references: [id])
+  documents       Document[]
 
   @@map("fund_request")
 }
@@ -232,18 +240,19 @@ model VolunteerRequest {
   participantLimit Int
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
-  volunteers       Volunteer[]
-  createdBy        User                   @relation(fields: [createdById], references: [id])
   project          Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy        User                   @relation(fields: [createdById], references: [id])
+  volunteers       Volunteer[]
 
   @@map("volunteer_request")
 }
 
 model VolunteerAvailability {
-  id          String    @id @default(uuid())
+  id          String @id @default(uuid())
   volunteerId String
   day         String
-  volunteer   Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+
+  volunteer Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
 
   @@map("volunteer_availability")
 }
@@ -253,13 +262,24 @@ model Volunteer {
   userId             String
   volunteerRequestId String
   joinedAt           DateTime                @default(now())
-  status             VolunteerStatus         @default(Pending)
   user               User                    @relation(fields: [userId], references: [id])
   volunteerRequest   VolunteerRequest        @relation(fields: [volunteerRequestId], references: [id], onDelete: Cascade)
+  status             VolunteerStatus         @default(Pending)
   availability       VolunteerAvailability[]
+  volunteerForm      VolunteerForm[]
 
   @@unique([userId, volunteerRequestId])
   @@map("volunteer")
+}
+
+model VolunteerForm {
+  id          String    @id @default(uuid())
+  motivation  String
+  experience  String
+  volunteerId String
+  volunteer   Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+
+  @@map("volunteer_form")
 }
 
 model KanbanBoard {
@@ -267,12 +287,12 @@ model KanbanBoard {
   projectId String         @unique
   name      String
   ownerId   String
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
   owner     User           @relation("BoardOwner", fields: [ownerId], references: [id])
+  members   User[]         @relation("BoardMembers")
   columns   KanbanColumn[]
   labels    KanbanLabel[]
-  members   User[]         @relation("BoardMembers")
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 
   @@map("kanban_board")
 }
@@ -282,11 +302,11 @@ model KanbanColumn {
   title     String
   position  Int
   boardId   String
+  board     KanbanBoard      @relation(fields: [boardId], references: [id])
+  cards     KanbanCard[]
   color     KanbanColorType? @default(Gray)
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
-  cards     KanbanCard[]
-  board     KanbanBoard      @relation(fields: [boardId], references: [id])
 
   @@map("kanban_column")
 }
@@ -298,14 +318,14 @@ model KanbanCard {
   dueDate     DateTime?
   description String?
   columnId    String
-  creatorId   String
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
   column      KanbanColumn         @relation(fields: [columnId], references: [id])
+  creatorId   String
   creator     User                 @relation(fields: [creatorId], references: [id])
   assignees   KanbanCardAssignee[]
   labels      KanbanCardLabel[]
   comments    KanbanComment[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
 
   @@map("kanban_card")
 }
@@ -315,9 +335,9 @@ model KanbanLabel {
   name      String
   color     String
   boardId   String
-  createdAt DateTime          @default(now())
-  labels    KanbanCardLabel[]
   board     KanbanBoard       @relation(fields: [boardId], references: [id])
+  labels    KanbanCardLabel[]
+  createdAt DateTime          @default(now())
 
   @@map("kanban_label")
 }
@@ -346,10 +366,10 @@ model KanbanComment {
   id        String     @id @default(uuid())
   content   String
   cardId    String
-  userId    String
-  createdAt DateTime   @default(now())
   card      KanbanCard @relation(fields: [cardId], references: [id])
+  userId    String
   user      User       @relation(fields: [userId], references: [id])
+  createdAt DateTime   @default(now())
 
   @@map("kanban_comment")
 }
@@ -368,48 +388,39 @@ model Notification {
 }
 
 model DiscussionRoom {
-  id            String                      @id @default(uuid())
-  createdAt     DateTime                    @default(now())
-  updatedAt     DateTime                    @updatedAt
-  name          String
+  id String @id @default(uuid())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name String
+
   projectId     String?
   fundRequestId String?
-  participants  DiscussionRoomParticipant[]
   messages      Message[]
+  participants  DiscussionRoomParticipant[]
 }
 
 model DiscussionRoomParticipant {
   id     String         @id @default(uuid())
   userId String
   roomId String
-  room   DiscussionRoom @relation(fields: [roomId], references: [id])
   user   User           @relation(fields: [userId], references: [id])
+  room   DiscussionRoom @relation(fields: [roomId], references: [id])
 
   @@unique([userId, roomId])
 }
 
 model Message {
-  id        String         @id @default(uuid())
+  id        String   @id @default(uuid())
   content   String
-  createdAt DateTime       @default(now())
-  userId    String
-  roomId    String
-  room      DiscussionRoom @relation(fields: [roomId], references: [id])
-  user      User           @relation(fields: [userId], references: [id])
-}
+  createdAt DateTime @default(now())
 
-model VolunteerForm {
-  id              String            @id
-  contact         String
-  preferredTask   String
-  VolunteerSkills VolunteerSkills[]
-}
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-model VolunteerSkills {
-  id              String         @id
-  skill           String
-  volunteerFormId String?
-  VolunteerForm   VolunteerForm? @relation(fields: [volunteerFormId], references: [id])
+  roomId String
+  room   DiscussionRoom @relation(fields: [roomId], references: [id])
 }
 
 enum FundRequestStatusType {
@@ -433,15 +444,15 @@ enum DocumentCategoryType {
 }
 
 enum ProjectStatusType {
-  Pending
-  Approved
-  Rejected
-  Revision
-  Ongoing
-  HighRisk
-  Completed
+  Pending // <-- When Project is First Submitted.
   ProposalApproved
   BudgetApproved
+  Approved // <-- When the Project is Approved. note: This is the stage where the submitter can post volunteer requests
+  Rejected // <-- When the Project is Rejected.
+  Revision // <-- When the Project is for Revision. note: After the submitter revised the project, it goes back to "Pending" Status
+  Ongoing // <-- When the Project is on progress. 
+  HighRisk // <-- eme lang
+  Completed // <-- The submitter can set it to completed.
 }
 
 enum VolunteerRequestStatus {

@@ -31,6 +31,7 @@ const permissionStatement = {
   report: ["view"],
   approvalAndComs: ["view"],
   volunteer: ["view", "create", "participate", "approve", "reject", "close"],
+  kanban: ["create", "edit", "delete"],
 } as const;
 
 export type PermissionGroup = keyof typeof permissionStatement;
@@ -69,6 +70,7 @@ const generateRoles = () => {
       document: ["create", "view", "update", "delete", "share", "archive"],
       approvalAndComs: ["view"],
       volunteer: ["approve", "reject"],
+      kanban: ["create", "edit", "delete"],
       report: ["view"],
     }),
     u2: ac.newRole({

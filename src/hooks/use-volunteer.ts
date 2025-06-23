@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  closeVolunteerRequesr,
+  closeVolunteerRequest,
   getAllRequest,
   getUserParticipatedProjects,
   getUserTasks,
@@ -95,7 +95,7 @@ export function useGetProjectRequestById(params: { id: string }) {
 export function useCloseVolunteerRequest() {
   return useMutation({
     mutationKey: ["close-request"],
-    mutationFn: closeVolunteerRequesr,
+    mutationFn: closeVolunteerRequest,
     onSuccess: () => {
       toast.success("Request closed");
     },
