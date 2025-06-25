@@ -29,7 +29,7 @@ const permissionStatement = {
   document: ["create", "view", "update", "delete", "share", "archive"],
   adminPanel: ["view"],
   report: ["view"],
-  approvalAndComs: ["view"],
+  approvalAndComs: ["view", "chat"],
   volunteer: ["view", "create", "participate", "approve", "reject", "close"],
   kanban: ["create", "edit", "delete"],
 } as const;
@@ -77,7 +77,7 @@ const generateRoles = () => {
       proposal: ["approve", "reject", "request-revision", "view"],
       document: ["view", "create"],
       fundRequest: ["view", "approve", "reject", "disburse"],
-      approvalAndComs: ["view"],
+      approvalAndComs: ["view", "chat"],
       volunteer: ["approve", "reject"],
       report: ["view"],
     }),
@@ -98,7 +98,7 @@ const generateRoles = () => {
     u4: ac.newRole({
       proposal: ["create", "revise", "update", "view", "complete"],
       document: ["view", "create"],
-      approvalAndComs: ["view"],
+      approvalAndComs: ["view", "chat"],
       volunteer: ["approve", "reject"],
       report: ["view"],
     }),

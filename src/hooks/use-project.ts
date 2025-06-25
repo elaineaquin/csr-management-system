@@ -20,6 +20,7 @@ import {
   createRequestParticipants,
   createProjectHistory,
   getProjectDiscussionRoom,
+  getProjectParticipants,
 } from "@/server/project";
 
 export function useGetProjectsList(params: {
@@ -290,5 +291,16 @@ export function useGetProjectDiscussionRoomId(params: { id: string }) {
       return room ?? null;
     },
     enabled: !!params.id,
+  });
+}
+
+export function useGetProjectParticipants(params: { projectId: string }) {
+  return useQuery({
+    queryKey: ["project-participants", params],
+    queryFn: async () => {
+      const participants = await getProjectParticipants(params);
+      return participants ?? [];
+    },
+    enabled: !!params.projectId,
   });
 }
