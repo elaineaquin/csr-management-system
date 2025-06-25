@@ -16,15 +16,13 @@ import {
 import { usePathname } from "next/navigation";
 import { navItems, type NavItem } from "@/config/nav";
 import Link from "next/link";
-import { Building2, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { AppFooter } from "./app-footer";
 import { useHasPermission } from "@/hooks/use-permissions";
 import { useSession } from "@/lib/auth-client";
-import { User } from "@/server/document";
 import { Badge } from "./ui/badge";
 import { AvatarDisplay } from "./avatar-display";
 import { roleMap } from "./role-display";
-import { RoleKey } from "@/lib/permissions";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session, isPending } = useSession();
@@ -44,7 +42,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         role: session.user.role,
       });
     }
-  }, [isPending]);
+  }, [isPending, session]);
 
   return (
     <Sidebar {...props}>

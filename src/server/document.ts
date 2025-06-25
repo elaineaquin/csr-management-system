@@ -242,7 +242,11 @@ export async function checkFolderPermission({
   }
 
   // Check special role
-  if (session.user.role?.includes("u1") || session.user.role?.includes("u2"))
+  if (
+    session.user.role?.includes("u1") ||
+    session.user.role?.includes("u2") ||
+    session.user.role?.includes("u4")
+  )
     return true;
 
   // Check if the user is the owner
