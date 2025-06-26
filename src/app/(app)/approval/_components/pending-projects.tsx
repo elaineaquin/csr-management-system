@@ -37,6 +37,7 @@ import { ProjectWithCreator } from "@/types/project.type";
 import { EyeIcon, XIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { ParticipantsDialog } from "./participants-dialog";
 
 export function PendingProjects() {
   const { data: projects, isLoading } = useGetProjectsList({
@@ -70,7 +71,7 @@ export function PendingProject({ project }: { project: ProjectWithCreator }) {
   const {
     data: participants = [],
     isLoading: loadingParticipants,
-    error: participantsError,
+    isError: participantsError,
   } = useGetProjectParticipants({
     projectId: project.id,
   });
@@ -158,51 +159,16 @@ export function PendingProject({ project }: { project: ProjectWithCreator }) {
       </Drawer>
 
       {/* Participants Dialog */}
-      <Dialog open={showParticipants} onOpenChange={setShowParticipants}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Discussion Participants</DialogTitle>
-            <DialogDescription>
-              List of users in this discussion room.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="mt-2 space-y-2">
-            {loadingParticipants ? (
-              <div className="text-sm text-muted-foreground">
-                Loading participants...
-              </div>
-            ) : participantsError ? (
-              <div className="text-red-500">Error loading participants</div>
-            ) : participants.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
-                No participants found.
-              </p>
-            ) : (
-              participants.map((user) => {
-                if (!user) return null; // Handle case where user is undefined
-                return (
-                  <div key={user.id} className="flex items-center gap-2">
-                    <UserInfoCard
-                      userId={user.id}
-                      userName={user.name || user.email}
-                    />
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="secondary"
-              onClick={() => setShowParticipants(false)}
-            >
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ParticipantsDialog
+        showParticipants={showParticipants}
+        setShowParticipants={setShowParticipants}
+        loadingParticipants={loadingParticipants}
+        participantsError={participantsError}
+        participants={participants.filter(
+          (p): p is NonNullable<typeof p> => p !== undefined
+        )}
+        project={project}
+      />
     </>
   );
 }

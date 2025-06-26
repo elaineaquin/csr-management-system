@@ -16,13 +16,12 @@ import {
 import { usePathname } from "next/navigation";
 import { navItems, type NavItem } from "@/config/nav";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { Building2Icon, ChevronRight } from "lucide-react";
 import { AppFooter } from "./app-footer";
 import { useHasPermission } from "@/hooks/use-permissions";
 import { useSession } from "@/lib/auth-client";
-import { Badge } from "./ui/badge";
-import { AvatarDisplay } from "./avatar-display";
-import { roleMap } from "./role-display";
+import { siteConfig } from "@/config/site";
+import { UserInfoCard } from "./user-info-card";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session, isPending } = useSession();
@@ -33,13 +32,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [user, setUser] = useState<{
     name: string;
     role?: string | null;
+    id: string;
   } | null>(null);
 
   useEffect(() => {
     if (session?.user) {
       setUser({
-        name: session.user.name,
+        name: session.user.name.split(" ")[0],
         role: session.user.role,
+        id: session.user.id,
       });
     }
   }, [isPending, session]);
@@ -53,35 +54,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground hover:bg-transparent hover:text-inherit active:bg-transparent active:text-inherit"
             >
-              <div className="flex aspect-square size-8 items-center justify-center">
-                <AvatarDisplay name={user?.name ?? ""} size="medium" />
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                <Building2Icon className="size-4" />
               </div>
-              <div className="flex flex-col gap-0.5 leading-none">
-                <span className="font-semibold">{user?.name}</span>
+              <div className="flex flex-col gap-0.5 leading-none w-full">
+                <div className="flex items-center justify-between w-full">
+                  <span className="font-semibold">{siteConfig.name}</span>
+                  <span className="font-semibold">
+                    <UserInfoCard
+                      userName={user?.name}
+                      userId={user?.id ?? ""}
+                    />
+                  </span>
+                </div>
                 <span className="truncate text-xs">
-                  {user?.role?.split(",").map((role) => {
-                    const trimmedRole = role.trim();
-                    const roleInfo =
-                      trimmedRole in roleMap
-                        ? roleMap[trimmedRole as keyof typeof roleMap]
-                        : {
-                            label: trimmedRole,
-                            description: "Unknown role",
-                          };
-
-                    return (
-                      <Badge
-                        key={trimmedRole}
-                        variant="secondary"
-                        className="mr-1"
-                        title={roleInfo.label}
-                      >
-                        {roleInfo.label.length > 3
-                          ? `${roleInfo.label.slice(0, 3)}...`
-                          : roleInfo.label}
-                      </Badge>
-                    );
-                  })}
+                  {siteConfig.description}
                 </span>
               </div>
             </SidebarMenuButton>
@@ -108,6 +95,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     </Sidebar>
   );
 }
+
 function NavItem({ item, isActive }: { item: NavItem; isActive: boolean }) {
   const pathname = usePathname();
   const { open } = useSidebar();
