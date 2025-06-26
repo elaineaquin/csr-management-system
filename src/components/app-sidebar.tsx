@@ -22,6 +22,8 @@ import { useHasPermission } from "@/hooks/use-permissions";
 import { useSession } from "@/lib/auth-client";
 import { siteConfig } from "@/config/site";
 import { UserInfoCard } from "./user-info-card";
+import { RoleDisplay, roleMap } from "./role-display";
+import { RoleKey } from "@/lib/permissions";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session, isPending } = useSession();
@@ -45,6 +47,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
   }, [isPending, session]);
 
+  const roles = session?.user.role?.split(",").map((r) => r.trim()) || [];
+
+  const firstValidRole = roles.find((role) => {
+    return (
+      role in roleMap && roleMap[role as RoleKey].label !== roleMap.user.label
+    );
+  });
+
   return (
     <Sidebar {...props}>
       <SidebarHeader className="border-grid border-b h-14 flex justify-center">
@@ -61,10 +71,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <div className="flex items-center justify-between w-full">
                   <span className="font-semibold">{siteConfig.name}</span>
                   <span className="font-semibold">
-                    <UserInfoCard
-                      userName={user?.name}
-                      userId={user?.id ?? ""}
-                    />
+                    <RoleDisplay role={firstValidRole as RoleKey} />
                   </span>
                 </div>
                 <span className="truncate text-xs">
