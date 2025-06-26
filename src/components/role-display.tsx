@@ -35,28 +35,28 @@ export const roleMap: Record<
     description: "Regular system user",
   },
   u1: {
-    label: "CSR Points of Contact",
+    label: "CSR POC",
     icon: (
       <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mr-2" />
     ),
     description: "Liaisons for CSR-related communication",
   },
   u2: {
-    label: "Leadership & Approvers",
+    label: "Approvers",
     icon: (
       <Briefcase className="w-4 h-4 text-purple-600 dark:text-purple-400 mr-2" />
     ),
     description: "Directors, CEOs, and decision makers",
   },
   u3: {
-    label: "Finance & Procurement",
+    label: "Finance",
     icon: (
       <DollarSign className="w-4 h-4 text-green-600 dark:text-green-400 mr-2" />
     ),
     description: "Handles financial and purchasing operations",
   },
   u4: {
-    label: "Partner Organizations",
+    label: "Partner Org",
     icon: (
       <Handshake className="w-4 h-4 text-yellow-600 dark:text-yellow-400 mr-2" />
     ),

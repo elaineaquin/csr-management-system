@@ -7,16 +7,14 @@ Open the terminal in VS Code (Mac shortcut):
 |           Action           | Shortcut (Mac) |
 | :------------------------: | :------------: |
 | Toggle Terminal in VS Code |     ⌘ + J      |
+|   Kill running terminal    |  control + c   |
 
 ## 📁 If You Just Cloned the Repo
 
 Run these commands in order:
 
 ```bash
-pnpm install
-pnpm dlx prisma generate
-pnpm dlx prisma db push
-pnpm dev
+pnpm install && pnpm dlx prisma generate && pnpm dlx prisma db push && pnpm dev
 ```
 
 ##### ⚠️ Make sure .env is configured before running these!
@@ -27,18 +25,16 @@ pnpm dev
 pnpm dev
 ```
 
-## 🚀 Running in Production
+## 🚀 Running in Production or New Update from Github
 
 ```bash
-pnpm build
-pnpm start
+pnpm build && pnpm start
 ```
 
-## 🧬 Prisma Commands
+## 🧬 Prisma Studio
 
 ```bash
-pnpm dlx prisma generate
-pnpm dlx prisma studio
+pnpm dlx prisma generate && pnpm dlx prisma studio
 ```
 
 💡 Notes

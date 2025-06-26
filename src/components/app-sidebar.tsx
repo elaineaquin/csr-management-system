@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -21,31 +21,14 @@ import { AppFooter } from "./app-footer";
 import { useHasPermission } from "@/hooks/use-permissions";
 import { useSession } from "@/lib/auth-client";
 import { siteConfig } from "@/config/site";
-import { UserInfoCard } from "./user-info-card";
 import { RoleDisplay, roleMap } from "./role-display";
 import { RoleKey } from "@/lib/permissions";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { data: session, isPending } = useSession();
+  const { data: session } = useSession();
   const pathname = usePathname();
   const isActive = (path?: string) =>
     pathname === path || pathname?.startsWith(`${path}/`);
-
-  const [user, setUser] = useState<{
-    name: string;
-    role?: string | null;
-    id: string;
-  } | null>(null);
-
-  useEffect(() => {
-    if (session?.user) {
-      setUser({
-        name: session.user.name.split(" ")[0],
-        role: session.user.role,
-        id: session.user.id,
-      });
-    }
-  }, [isPending, session]);
 
   const roles = session?.user.role?.split(",").map((r) => r.trim()) || [];
 
