@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import type React from "react";
+
 import {
   PageActions,
   PageHeader,
@@ -76,6 +78,7 @@ export default function AddUsersPage() {
     name: string;
     email: string;
   }>({ name: "", email: "" });
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -171,6 +174,86 @@ export default function AddUsersPage() {
       toast.success(`${newUsers.length} users added from bulk import`);
     } else {
       toast.error("No valid users found in the text");
+    }
+  };
+
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith(".csv")) {
+      toast.error("Please upload a CSV file");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      // 5MB limit
+      toast.error("File size must be less than 5MB");
+      return;
+    }
+
+    setIsProcessingFile(true);
+
+    try {
+      const text = await file.text();
+      const lines = text.trim().split("\n");
+      const newUsers: UserType[] = [];
+
+      // Skip header row if it exists
+      const startIndex = lines[0]?.toLowerCase().includes("name") ? 1 : 0;
+
+      for (let i = startIndex; i < lines.length; i++) {
+        const line = lines[i];
+        const parts = line
+          .split(",")
+          .map((part) => part.trim().replace(/"/g, ""));
+
+        if (parts.length >= 3) {
+          const [name, email, password, ...roleParts] = parts;
+          const roles =
+            roleParts.length > 0
+              ? roleParts.filter(
+                  (role) => role && availableRoles.includes(role as RoleKey)
+                )
+              : ["user"];
+
+          // Validate email format
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(email)) {
+            toast.error(`Invalid email format: ${email}`);
+            continue;
+          }
+
+          const emailExists = [...users, ...newUsers].some(
+            (user) => user.email === email
+          );
+          if (!emailExists && name && email && password) {
+            newUsers.push({
+              id: generateId(),
+              name,
+              email,
+              password,
+              role: (roles.length === 1 ? roles[0] : roles) as RoleKey[],
+            });
+          }
+        }
+      }
+
+      if (newUsers.length > 0) {
+        setUsers([...users, ...newUsers]);
+        toast.success(`${newUsers.length} users imported from CSV file`);
+      } else {
+        toast.error("No valid users found in the CSV file");
+      }
+    } catch (error) {
+      console.error("Error reading file:", error);
+      toast.error("Error reading the CSV file. Please check the file format.");
+    } finally {
+      setIsProcessingFile(false);
+      // Reset file input
+      event.target.value = "";
     }
   };
 
@@ -391,31 +474,67 @@ export default function AddUsersPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Button variant="outline" onClick={exportTemplate}>
-                      <Download className="h-4 w-4" />
-                      Download Template
-                    </Button>
-                    <span className="text-sm text-muted-foreground">
-                      Download a CSV template to see the expected format
-                    </span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" onClick={exportTemplate}>
+                          <Download className="h-4 w-4" />
+                          Download Template
+                        </Button>
+                        <span className="text-sm text-muted-foreground">
+                          Get the CSV format
+                        </span>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="csv-upload">Upload CSV File</Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            id="csv-upload"
+                            type="file"
+                            accept=".csv"
+                            onChange={handleFileUpload}
+                            disabled={isProcessingFile}
+                            className="cursor-pointer"
+                          />
+                          {isProcessingFile && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                              Processing...
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Upload a CSV file with columns: Name, Email, Password,
+                          Role1, Role2... (Max 5MB)
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="text-sm font-medium">
+                        Or paste CSV data manually:
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="bulk-text">CSV Data</Label>
+                        <Textarea
+                          id="bulk-text"
+                          value={bulkText}
+                          onChange={(e) => setBulkText(e.target.value)}
+                          placeholder="John Doe,john@example.com,password123,user&#10;Jane Smith,jane@example.com,password456,user,admin"
+                          rows={6}
+                        />
+                      </div>
+                      <Button
+                        onClick={parseBulkText}
+                        className="w-full"
+                        disabled={!bulkText.trim()}
+                      >
+                        <Upload className="h-4 w-4" />
+                        Import from Text
+                      </Button>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="bulk-text">
-                      Paste CSV Data (Name, Email, Password, Role1, Role2...)
-                    </Label>
-                    <Textarea
-                      id="bulk-text"
-                      value={bulkText}
-                      onChange={(e) => setBulkText(e.target.value)}
-                      placeholder="John Doe,john@example.com,password123,user&#10;Jane Smith,jane@example.com,password456,user,admin"
-                      rows={8}
-                    />
-                  </div>
-                  <Button onClick={parseBulkText} className="w-full">
-                    <Upload className="h-4 w-4" />
-                    Import Users
-                  </Button>
                 </CardContent>
               </Card>
             </TabsContent>

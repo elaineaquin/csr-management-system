@@ -48,5 +48,3 @@ pnpm dlx prisma studio
 - Run pnpm dlx prisma generate whenever you update your schema.prisma.
 
 - Use ctrl + C to stop any running command in the terminal.
-
-- udpate
