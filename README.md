@@ -34,15 +34,6 @@ pnpm build                     # Compile the app for production
 pnpm start                     # Start the production server
 ```
 
-## 📦 PNPM Commands
-
-```bash
-pnpm install # install dependencies
-pnpm dlx prisma generate
-pnpm build # build project (production ready)
-pnpm start #
-```
-
 ## 🧬 Prisma Commands
 
 ```bash
