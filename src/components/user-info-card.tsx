@@ -8,7 +8,6 @@ import { Separator } from "./ui/separator";
 import { useGetUserById } from "@/hooks/use-auth";
 import { RoleDisplay, roleMap } from "./role-display";
 import { RoleKey } from "@/lib/permissions";
-import { username } from "better-auth/plugins";
 
 export function UserInfoCard({
   userId,

@@ -13,10 +13,10 @@ Open the terminal in VS Code (Mac shortcut):
 Run these commands in order:
 
 ```bash
-pnpm install                   # Install dependencies
-pnpm dlx prisma generate       # Generate the Prisma client
-pnpm dlx prisma db push        # Push schema to the database
-pnpm dev                       # Start the development server
+pnpm install
+pnpm dlx prisma generate
+pnpm dlx prisma db push
+pnpm dev
 ```
 
 ##### ⚠️ Make sure .env is configured before running these!
@@ -24,21 +24,21 @@ pnpm dev                       # Start the development server
 ## 🧪 Running in Development
 
 ```bash
-pnpm dev                       # Starts the Next.js dev server (with hot reload)
+pnpm dev
 ```
 
 ## 🚀 Running in Production
 
 ```bash
-pnpm build                     # Compile the app for production
-pnpm start                     # Start the production server
+pnpm build
+pnpm start
 ```
 
 ## 🧬 Prisma Commands
 
 ```bash
 pnpm dlx prisma generate
-pnpm dlx prisma studio # view and have write access on database directly
+pnpm dlx prisma studio
 ```
 
 💡 Notes
