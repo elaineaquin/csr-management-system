@@ -2,7 +2,6 @@
 
 import { RoleDisplay } from "@/components/role-display";
 import { Badge } from "@/components/ui/badge";
-import { UserInfoCard } from "@/components/user-info-card";
 import {
   HoverCard,
   HoverCardTrigger,
